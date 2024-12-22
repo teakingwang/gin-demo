@@ -1,0 +1,13 @@
+server:
+  host: "127.0.0.1"
+  port: "8080"
+
+database:
+  host: pg1
+  port: 5432
+  user: user
+  password: 123456
+  database: user
+  schema: public
+  dialect: postgres
+  level: info # 1:Silent 2:Error 3:Warn 4:Info 值越小级别越高

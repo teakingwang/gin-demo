@@ -1,0 +1,36 @@
+networks:
+  gin:
+    external: true
+
+services:
+  gin-pg:
+    image: postgres:latest
+    container_name: pg1
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: user
+    ports:
+      - 5432:5432
+    networks:
+      - gin
+    volumes:
+      - /Users/teaking/dbdata/postgres/data:/var/lib/postgresql/data
+
+  gin-demo: # 服务的名称，你可以根据需要更改
+    container_name: demo1
+    restart: always
+    build: # 构建服务的指令
+      context: .  # 指定构建上下文为当前目录
+      dockerfile: Dockerfile  # 指定 Dockerfile 的名称
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - 8080:8080  # 将容器的 8080 端口映射到主机的 8080 端口（根据你的应用实际监听的端口进行修改）
+    networks:
+      - gin
+    volumes:
+      - /etc/localtime:/etc/localtime
+    depends_on:  # 指定服务启动的依赖关系
+      - gin-pg  # 如果你的应用需要连接数据库，可以添加数据库服务作为依赖
+    command: /app/gin-demo

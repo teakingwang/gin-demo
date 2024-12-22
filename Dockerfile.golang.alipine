@@ -1,0 +1,26 @@
+# 使用官方的 Golang 镜像作为基础镜像，版本为 1.20
+FROM golang:1.23-alpine AS builder
+
+RUN apk add --no-cache make
+
+# 设置工作目录
+WORKDIR /app
+
+# 将项目的 Go 源码复制到 Docker 容器中
+COPY . .
+
+# 构建你的 Go 应用
+# 假设 Makefile 存在并且定义了 clean 和 all 目标
+RUN make clean && make all
+
+# 使用一个更小的镜像来运行你的应用
+FROM alpine:latest
+WORKDIR /app
+
+# 从构建阶段复制可执行文件到运行阶段
+# 假设 make 构建的可执行文件名为 gin-demo
+COPY --from=builder /app/gin-demo .
+COPY --from=builder /app/resources ./resources
+
+# 运行你的应用
+CMD ["./gin-demo"]
