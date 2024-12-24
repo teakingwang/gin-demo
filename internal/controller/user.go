@@ -12,7 +12,8 @@ type userController struct {
 }
 
 func NewUserController(db *gorm.DB) *userController {
-	factory := service.NewServiceFactory(db)
+	service.NewServiceFactory(db)
+	factory := service.GetServiceFactory()
 	return &userController{
 		srv: factory.UserSrv,
 	}

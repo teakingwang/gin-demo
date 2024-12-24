@@ -6,19 +6,22 @@ import (
 )
 
 var (
-	factory *serviceFactory
+	factory *Factory
 	once    sync.Once
 )
 
-type serviceFactory struct {
+type Factory struct {
 	UserSrv *UserService
 }
 
-func NewServiceFactory(db *gorm.DB) *serviceFactory {
+func NewServiceFactory(db *gorm.DB) {
 	once.Do(func() {
-		factory = &serviceFactory{
+		factory = &Factory{
 			UserSrv: NewUserService(db),
 		}
 	})
+}
+
+func GetServiceFactory() *Factory {
 	return factory
 }
