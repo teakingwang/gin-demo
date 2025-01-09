@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/teakingwang/gin-demo/config"
@@ -32,7 +31,7 @@ func (s *Server) Run() {
 
 	// router
 	s.router = NewRouter(net.JoinHostPort(config.Config.Server.Host, config.Config.Server.Port))
-	s.router.Config(gormDB)
+	s.router.Config()
 	s.router.Run()
 
 	select {}
@@ -46,14 +45,7 @@ func NewServerCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			server.Run()
 		},
-		Args: func(cmd *cobra.Command, args []string) error {
-			for _, arg := range args {
-				if len(arg) > 0 {
-					return fmt.Errorf("%q does not take any arguments, got %q", cmd.CommandPath(), args)
-				}
-			}
-			return nil
-		},
+		Args: cobra.ExactArgs(1),
 	}
 
 	cmd.Flags().StringP("config", "c", "config.yaml", "config file (default is ./resources/config.yaml)")

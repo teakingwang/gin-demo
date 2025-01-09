@@ -3,15 +3,14 @@ package service
 import (
 	"github.com/teakingwang/gin-demo/internal/models"
 	"github.com/teakingwang/gin-demo/internal/repository"
-	"gorm.io/gorm"
 )
 
 type UserService struct {
 	userRepo *repository.UserRepo
 }
 
-func NewUserService(db *gorm.DB) *UserService {
-	userRepo := repository.NewUserRepo(db)
+func NewUserService() *UserService {
+	userRepo := repository.NewUserRepo()
 	if err := userRepo.Migrate(); err != nil {
 		panic("failed to migrate database")
 	}

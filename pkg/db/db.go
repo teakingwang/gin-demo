@@ -7,6 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var GormDB *gorm.DB
+
 func NewDB() (*gorm.DB, error) {
 	var gdb *gorm.DB
 
@@ -19,5 +21,6 @@ func NewDB() (*gorm.DB, error) {
 		return nil, fmt.Errorf("database not support: %q", c.Dialect)
 	}
 
+	GormDB = gdb
 	return gdb, nil
 }

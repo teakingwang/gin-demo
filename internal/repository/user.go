@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/teakingwang/gin-demo/internal/models"
+	"github.com/teakingwang/gin-demo/pkg/db"
 	"gorm.io/gorm"
 )
 
@@ -9,8 +10,8 @@ type UserRepo struct {
 	db *gorm.DB
 }
 
-func NewUserRepo(db *gorm.DB) *UserRepo {
-	return &UserRepo{db: db}
+func NewUserRepo() *UserRepo {
+	return &UserRepo{db: db.GormDB}
 }
 
 func (repo *UserRepo) Migrate() error {

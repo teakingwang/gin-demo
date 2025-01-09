@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/teakingwang/gin-demo/internal/controller"
-	"gorm.io/gorm"
 )
 
 type Router struct {
@@ -18,12 +17,12 @@ func NewRouter(addr string) *Router {
 	}
 }
 
-func (r *Router) Config(db *gorm.DB) {
+func (r *Router) Config() {
 	r.router.MaxMultipartMemory = 8 << 20 // 8 MiB
 
 	v := r.router.Group("/v1/user")
 	{
-		userController := controller.NewUserController(db)
+		userController := controller.NewUserController()
 		v.GET("", userController.GetUserList)
 	}
 }

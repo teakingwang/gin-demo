@@ -3,7 +3,6 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/teakingwang/gin-demo/internal/service"
-	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -11,8 +10,8 @@ type userController struct {
 	srv *service.UserService
 }
 
-func NewUserController(db *gorm.DB) *userController {
-	service.NewServiceFactory(db)
+func NewUserController() *userController {
+	service.NewServiceFactory()
 	factory := service.GetServiceFactory()
 	return &userController{
 		srv: factory.UserSrv,

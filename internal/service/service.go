@@ -14,10 +14,10 @@ type Factory struct {
 	UserSrv *UserService
 }
 
-func NewServiceFactory(db *gorm.DB) {
+func NewServiceFactory() {
 	once.Do(func() {
 		factory = &Factory{
-			UserSrv: NewUserService(db),
+			UserSrv: NewUserService(),
 		}
 	})
 }
