@@ -6,13 +6,12 @@ import (
 	"github.com/spf13/viper"
 	"github.com/teakingwang/gin-demo/config"
 	"github.com/teakingwang/gin-demo/internal/app"
+	"github.com/teakingwang/gin-demo/internal/router"
 	"github.com/teakingwang/gin-demo/pkg/idgen"
 	"net"
 )
 
-type Server struct {
-	router *Router
-}
+type Server struct{}
 
 var server = newServer()
 
@@ -32,9 +31,12 @@ func (s *Server) Run() {
 	}
 
 	// router
-	s.router = NewRouter(net.JoinHostPort(config.Config.Server.Host, config.Config.Server.Port))
-	s.router.Config(ctx)
-	s.router.Run()
+	r := router.NewRouter(ctx)
+	go func() {
+		if err := r.Run(net.JoinHostPort(config.Config.Server.Host, config.Config.Server.Port)); err != nil {
+			ctx.Logger.Panic(fmt.Sprintf("failed to run Gin server: %v", err))
+		}
+	}()
 
 	select {}
 }
