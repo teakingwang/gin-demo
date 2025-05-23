@@ -1,7 +1,7 @@
 package service
 
 import (
-	"gorm.io/gorm"
+	"github.com/teakingwang/gin-demo/internal/app"
 	"sync"
 )
 
@@ -14,10 +14,10 @@ type Factory struct {
 	UserSrv *UserService
 }
 
-func NewServiceFactory() {
+func NewServiceFactory(ctx *app.AppContext) {
 	once.Do(func() {
 		factory = &Factory{
-			UserSrv: NewUserService(),
+			UserSrv: NewUserService(ctx),
 		}
 	})
 }

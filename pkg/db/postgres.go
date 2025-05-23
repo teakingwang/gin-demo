@@ -21,27 +21,27 @@ type PGDBConfig struct {
 	LogLevel logger.LogLevel
 }
 
-func NewPostgres(c *config.DatabaseConfig) *gorm.DB {
+func NewPostgres(c *config.DatabaseConfig) (*gorm.DB, error) {
 	pDB, err := newPGDBWithLevel(
 		c.User,
 		c.Password,
 		c.Database,
 		c.Schema,
 		c.Host,
-		c.Port,
 		c.Level,
+		c.Port,
 	)
 	if err != nil {
 		logrus.Errorf("failed to connect database, %+v", err)
-		return nil
+		return nil, err
 	}
 
-	return pDB
+	return pDB, nil
 }
 
-func newPGDBWithLevel(user, password, db, schema, host, port, level string) (*gorm.DB, error) {
+func newPGDBWithLevel(user, password, db, schema, host, level string, port int) (*gorm.DB, error) {
 	connURL := fmt.Sprintf(
-		"host=%s port=%s user=%s dbname=%s password=%s search_path=%s sslmode=disable",
+		"host=%s port=%d user=%s dbname=%s password=%s search_path=%s sslmode=disable",
 		host, port, user, db, password, schema)
 
 	var logLevel logger.LogLevel

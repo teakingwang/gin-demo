@@ -1,10 +1,12 @@
 package app
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/teakingwang/gin-demo/config"
-	"github.com/teakingwang/gin-demo/pkg/db"
+	"github.com/teakingwang/gin-demo/internal/app"
+	"github.com/teakingwang/gin-demo/pkg/idgen"
 	"net"
 )
 
@@ -21,17 +23,17 @@ func newServer() *Server {
 func (s *Server) Run() {
 	// load config
 	config.LoadConfig()
-	// 初始化db
-	gormDB, err := db.NewDB()
-	if err != nil {
-		panic(err)
+	// ctx
+	ctx := app.NewAppContext()
+	// idgen
+	// 初始化 ID 生成器
+	if err := idgen.Init(); err != nil {
+		panic(fmt.Sprintf("failed to initialize idgen: %v", err))
 	}
-	// 数据库迁移
-	db.MigrateDB(gormDB)
 
 	// router
 	s.router = NewRouter(net.JoinHostPort(config.Config.Server.Host, config.Config.Server.Port))
-	s.router.Config()
+	s.router.Config(ctx)
 	s.router.Run()
 
 	select {}
@@ -43,9 +45,9 @@ func NewServerCommand() *cobra.Command {
 		Long:         `The server is gin-demo demo`,
 		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("arg:", args)
 			server.Run()
 		},
-		Args: cobra.ExactArgs(1),
 	}
 
 	cmd.Flags().StringP("config", "c", "config.yaml", "config file (default is ./resources/config.yaml)")

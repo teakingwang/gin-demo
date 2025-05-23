@@ -16,6 +16,17 @@ services:
       - gin
     volumes:
       - /Users/teaking/dbdata/postgres/data:/var/lib/postgresql/data
+  gin-redis:
+    image: redis:7-alpine
+    container_name: redis1
+    restart: always
+    ports:
+      - 6379:6379
+    networks:
+      - gin
+    volumes:
+      - /Users/teaking/dbdata/redis/data:/var/lib/redis/data
+    command: ["redis-server", "--requirepass", "123456", "--appendonly", "yes"]
 
   gin-demo: # 服务的名称，你可以根据需要更改
     container_name: demo1
@@ -33,4 +44,5 @@ services:
       - /etc/localtime:/etc/localtime
     depends_on:  # 指定服务启动的依赖关系
       - gin-pg  # 如果你的应用需要连接数据库，可以添加数据库服务作为依赖
+      - gin-redis  # 如果你的应用需要连接 Redis，可以添加 Redis 服务作为依赖
     command: /app/gin-demo
