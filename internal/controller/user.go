@@ -6,7 +6,6 @@ import (
 	"github.com/teakingwang/gin-demo/internal/service"
 	"github.com/teakingwang/gin-demo/pkg/errs"
 	"github.com/teakingwang/gin-demo/pkg/resp"
-	"net/http"
 )
 
 type userController struct {
@@ -25,7 +24,7 @@ func (u *userController) GetUserList(c *gin.Context) {
 		resp.WriteError(c, errs.New(errs.CodeInvalidArgs, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, users)
+	resp.WriteSuccess(c, users)
 }
 
 func (u *userController) RegisterUser(c *gin.Context) {
@@ -36,14 +35,15 @@ func (u *userController) RegisterUser(c *gin.Context) {
 	}
 
 	create := &service.CreateUser{
-		Mobile: req.Mobile,
+		Mobile:     req.Mobile,
+		VerifyCode: req.VerifyCode,
 	}
 	id, err := u.srv.CreateUser(c, create)
 	if err != nil {
 		resp.WriteError(c, errs.New(errs.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, id)
+	resp.WriteSuccess(c, id)
 }
 
 func (u *userController) SendSms(c *gin.Context) {
@@ -58,5 +58,5 @@ func (u *userController) SendSms(c *gin.Context) {
 		resp.WriteError(c, errs.New(errs.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, code)
+	resp.WriteSuccess(c, code)
 }

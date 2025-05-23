@@ -2,7 +2,7 @@ package controller
 
 type CreateUser struct {
 	Mobile     string `json:"mobile" binding:"required,len=11"`
-	VerifyCode string `json:"verify_code" binding:"required,len=4"`
+	VerifyCode string `json:"verify_code" binding:"required,len=6"`
 }
 
 type SendSms struct {

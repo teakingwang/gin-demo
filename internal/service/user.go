@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"github.com/teakingwang/gin-demo/config"
+	"github.com/teakingwang/gin-demo/internal/consts"
 	"github.com/teakingwang/gin-demo/internal/model"
 	"github.com/teakingwang/gin-demo/internal/repository"
 	"github.com/teakingwang/gin-demo/pkg/datastore/redis"
-	"github.com/teakingwang/gin-demo/pkg/errs"
 	"github.com/teakingwang/gin-demo/pkg/generator"
 	"github.com/teakingwang/gin-demo/pkg/idgen"
 	"go.uber.org/zap"
@@ -30,6 +30,11 @@ func (s *UserService) GetAllUsers() ([]model.User, error) {
 
 func (s *UserService) CreateUser(ctx context.Context, create *CreateUser) (int64, error) {
 	s.logger.Info("call CreateUser")
+	err := s.checkVerifyCode(create.VerifyCode, create.Mobile)
+	if err != nil {
+		return 0, err
+	}
+
 	userID := idgen.NewID()
 	userItem := &model.User{
 		UserID:   userID,
@@ -38,14 +43,24 @@ func (s *UserService) CreateUser(ctx context.Context, create *CreateUser) (int64
 		Mobile:   create.Mobile,
 	}
 	if err := s.userRepo.CreateUser(ctx, userItem); err != nil {
-		return userID, errs.New(errs.CodeServerError, err.Error())
+		return userID, err
 	}
 	return userID, nil
 }
 
 func (s *UserService) checkVerifyCode(verifyCode, mobile string) error {
-	if verifyCode != "123456" {
-		return errs.New(errs.CodeInvalidArgs, "verify code is invalid")
+	redisCode, err := s.redis.Get(consts.KeyPrefixVerifyCode + mobile)
+	if err != nil {
+		return err
+	}
+
+	if verifyCode != redisCode {
+		return err
+	}
+
+	err = s.redis.Del(consts.KeyPrefixVerifyCode + mobile)
+	if err != nil {
+		s.logger.Error("del verify code err:", err)
 	}
 	return nil
 }
@@ -53,10 +68,15 @@ func (s *UserService) checkVerifyCode(verifyCode, mobile string) error {
 func (s *UserService) SendSms(ctx context.Context, mobile string) (string, error) {
 	code, err := generator.GenerateVerifyCode(6)
 	if err != nil {
-		return "", errs.New(errs.CodeServerError, err.Error())
+		return "", err
 	}
 
 	// 验证码写入redis
-	s.redis.Set(mobile, code, time.Duration(config.Config.SMS.CodeExpireSeconds))
-	return "", nil
+	err = s.redis.Set(consts.KeyPrefixVerifyCode+mobile, code, time.Duration(config.Config.SMS.CodeExpireSeconds)*time.Second)
+	if err != nil {
+		return "", err
+	}
+
+	s.logger.Info("send sms code to mobile:", mobile, " code:", code)
+	return code, nil
 }
