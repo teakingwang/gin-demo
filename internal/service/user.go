@@ -3,35 +3,33 @@ package service
 import (
 	"context"
 	"github.com/teakingwang/gin-demo/config"
-	"github.com/teakingwang/gin-demo/internal/app"
 	"github.com/teakingwang/gin-demo/internal/model"
 	"github.com/teakingwang/gin-demo/internal/repository"
+	"github.com/teakingwang/gin-demo/pkg/datastore/redis"
 	"github.com/teakingwang/gin-demo/pkg/errs"
 	"github.com/teakingwang/gin-demo/pkg/generator"
 	"github.com/teakingwang/gin-demo/pkg/idgen"
+	"go.uber.org/zap"
 	"time"
 )
 
 type UserService struct {
-	ctx      *app.AppContext
+	logger   *zap.SugaredLogger
+	redis    redis.Store
 	userRepo *repository.UserRepo
 }
 
-func NewUserService(ctx *app.AppContext) *UserService {
-	userRepo := repository.NewUserRepo(ctx.DB)
-	if err := userRepo.Migrate(); err != nil {
-		panic("failed to migrate database")
-	}
-	return &UserService{userRepo: userRepo, ctx: ctx}
+func NewUserService(redisStore redis.Store, logger *zap.SugaredLogger, userRepo *repository.UserRepo) *UserService {
+	return &UserService{userRepo: userRepo, logger: logger, redis: redisStore}
 }
 
 func (s *UserService) GetAllUsers() ([]model.User, error) {
-	s.ctx.Logger.Info("call GetAllUsers")
+	s.logger.Info("call GetAllUsers")
 	return s.userRepo.GetAllUsers()
 }
 
 func (s *UserService) CreateUser(ctx context.Context, create *CreateUser) (int64, error) {
-	s.ctx.Logger.Info("call CreateUser")
+	s.logger.Info("call CreateUser")
 	userID := idgen.NewID()
 	userItem := &model.User{
 		UserID:   userID,
@@ -59,6 +57,6 @@ func (s *UserService) SendSms(ctx context.Context, mobile string) (string, error
 	}
 
 	// 验证码写入redis
-	s.ctx.Redis.Set(mobile, code, time.Duration(config.Config.SMS.CodeExpireSeconds))
+	s.redis.Set(mobile, code, time.Duration(config.Config.SMS.CodeExpireSeconds))
 	return "", nil
 }

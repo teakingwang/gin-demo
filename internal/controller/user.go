@@ -14,10 +14,8 @@ type userController struct {
 }
 
 func NewUserController(ctx *app.AppContext) *userController {
-	service.NewServiceFactory(ctx)
-	factory := service.GetServiceFactory()
 	return &userController{
-		srv: factory.UserSrv,
+		srv: ctx.UserService,
 	}
 }
 
