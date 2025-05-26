@@ -8,18 +8,24 @@ import (
 	"github.com/teakingwang/gin-demo/pkg/resp"
 )
 
-type userController struct {
-	srv *service.UserService
+type UserController interface {
+	GetUserList(c *gin.Context)
+	LoginSms(c *gin.Context)
+	SendSms(c *gin.Context)
 }
 
-func NewUserController(ctx *app.AppContext) *userController {
+type userController struct {
+	srv service.UserService
+}
+
+func NewUserController(ctx *app.AppContext) UserController {
 	return &userController{
 		srv: ctx.UserService,
 	}
 }
 
 func (u *userController) GetUserList(c *gin.Context) {
-	users, err := u.srv.GetAllUsers()
+	users, err := u.srv.GetAllUsers(c)
 	if err != nil {
 		resp.WriteError(c, errs.New(errs.CodeInvalidArgs, err.Error()))
 		return
@@ -27,7 +33,7 @@ func (u *userController) GetUserList(c *gin.Context) {
 	resp.WriteSuccess(c, users)
 }
 
-func (u *userController) RegisterUser(c *gin.Context) {
+func (u *userController) LoginSms(c *gin.Context) {
 	req := &CreateUser{}
 	if err := c.ShouldBindJSON(req); err != nil {
 		resp.WriteError(c, errs.New(errs.CodeInvalidArgs, err.Error()))
@@ -38,12 +44,13 @@ func (u *userController) RegisterUser(c *gin.Context) {
 		Mobile:     req.Mobile,
 		VerifyCode: req.VerifyCode,
 	}
-	id, err := u.srv.CreateUser(c, create)
+
+	token, err := u.srv.CreateUser(c, create)
 	if err != nil {
 		resp.WriteError(c, errs.New(errs.CodeServerError, err.Error()))
 		return
 	}
-	resp.WriteSuccess(c, id)
+	resp.WriteSuccess(c, token)
 }
 
 func (u *userController) SendSms(c *gin.Context) {

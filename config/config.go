@@ -12,6 +12,7 @@ type config struct {
 	Database DatabaseConfig `yaml:"database" json:"database"`
 	Redis    RedisConfig    `yaml:"redis" json:"redis"`
 	SMS      SMSConfig      `yaml:"sms" json:"sms"`
+	JWT      JWTConfig      `yaml:"jwt" json:"jwt"`
 }
 
 type ServerConfig struct {
@@ -47,6 +48,11 @@ type SMSConfig struct {
 	TemplateCode      string `yaml:"templateCode" json:"templateCode"`
 	Region            string `yaml:"region" json:"region"`
 	CodeExpireSeconds int    `yaml:"codeExpireSeconds" json:"codeExpireSeconds"`
+}
+
+type JWTConfig struct {
+	Secret     string `yaml:"secret" json:"secret"`
+	TTLSeconds int    `yaml:"ttlSeconds" json:"ttlSeconds"`
 }
 
 func LoadConfig() *config {

@@ -6,6 +6,7 @@ import (
 	"github.com/teakingwang/gin-demo/internal/consts"
 	"github.com/teakingwang/gin-demo/internal/model"
 	"github.com/teakingwang/gin-demo/internal/repository"
+	"github.com/teakingwang/gin-demo/pkg/auth"
 	"github.com/teakingwang/gin-demo/pkg/datastore/redis"
 	"github.com/teakingwang/gin-demo/pkg/generator"
 	"github.com/teakingwang/gin-demo/pkg/idgen"
@@ -13,42 +14,48 @@ import (
 	"time"
 )
 
-type UserService struct {
+type UserService interface {
+	GetAllUsers(ctx context.Context) ([]model.User, error)
+	CreateUser(ctx context.Context, create *CreateUser) (string, error)
+	SendSms(ctx context.Context, mobile string) (string, error)
+}
+
+type userService struct {
 	logger   *zap.SugaredLogger
 	redis    redis.Store
 	userRepo *repository.UserRepo
 }
 
-func NewUserService(redisStore redis.Store, logger *zap.SugaredLogger, userRepo *repository.UserRepo) *UserService {
-	return &UserService{userRepo: userRepo, logger: logger, redis: redisStore}
+func NewUserService(redisStore redis.Store, logger *zap.SugaredLogger, userRepo *repository.UserRepo) UserService {
+	return &userService{userRepo: userRepo, logger: logger, redis: redisStore}
 }
 
-func (s *UserService) GetAllUsers() ([]model.User, error) {
+func (s *userService) GetAllUsers(ctx context.Context) ([]model.User, error) {
 	s.logger.Info("call GetAllUsers")
-	return s.userRepo.GetAllUsers()
+	return s.userRepo.GetAllUsers(ctx)
 }
 
-func (s *UserService) CreateUser(ctx context.Context, create *CreateUser) (int64, error) {
+func (s *userService) CreateUser(ctx context.Context, create *CreateUser) (string, error) {
 	s.logger.Info("call CreateUser")
 	err := s.checkVerifyCode(create.VerifyCode, create.Mobile)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	userID := idgen.NewID()
-	userItem := &model.User{
-		UserID:   userID,
-		Username: create.Mobile,
-		Nickname: generator.GenerateNickname("cn"),
-		Mobile:   create.Mobile,
+	userID, err := s.checkMobileExists(ctx, create.Mobile)
+	if err != nil {
+		return "", err
 	}
-	if err := s.userRepo.CreateUser(ctx, userItem); err != nil {
-		return userID, err
+
+	token, err := auth.GenerateToken(userID, time.Duration(config.Config.JWT.TTLSeconds)*time.Second)
+	if err != nil {
+		return "", err
 	}
-	return userID, nil
+
+	return token, nil
 }
 
-func (s *UserService) checkVerifyCode(verifyCode, mobile string) error {
+func (s *userService) checkVerifyCode(verifyCode, mobile string) error {
 	redisCode, err := s.redis.Get(consts.KeyPrefixVerifyCode + mobile)
 	if err != nil {
 		return err
@@ -65,7 +72,31 @@ func (s *UserService) checkVerifyCode(verifyCode, mobile string) error {
 	return nil
 }
 
-func (s *UserService) SendSms(ctx context.Context, mobile string) (string, error) {
+// checkMobile 检查手机号是否注册
+func (s *userService) checkMobileExists(ctx context.Context, mobile string) (int64, error) {
+	u, err := s.userRepo.GetByMobile(ctx, mobile)
+	if err != nil {
+		s.logger.Error("checkMobileExists error:", err)
+		return 0, err
+	}
+
+	if u != nil {
+		s.logger.Info("mobile exists, userID:", u.UserID)
+		return u.UserID, nil
+	}
+
+	userID := idgen.NewID()
+	userItem := &model.User{
+		UserID:   userID,
+		Username: mobile,
+		Nickname: generator.GenerateNickname("cn"),
+		Mobile:   mobile,
+	}
+
+	return userID, s.userRepo.CreateUser(ctx, userItem)
+}
+
+func (s *userService) SendSms(ctx context.Context, mobile string) (string, error) {
 	code, err := generator.GenerateVerifyCode(6)
 	if err != nil {
 		return "", err

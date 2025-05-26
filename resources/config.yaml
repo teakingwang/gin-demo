@@ -28,3 +28,7 @@ sms:
   templateCode: "SMS_123456789"   # 短信模板 ID
   region: "cn-hangzhou"           # 区域（如使用阿里云）
   codeExpireSeconds: 300             # 短信验证码有效时长（秒）
+
+jwt:
+  secret: "tokentest"
+  ttlSeconds: 60480  # 7天

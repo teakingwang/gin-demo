@@ -18,7 +18,16 @@ func (repo *UserRepo) Migrate() error {
 	return repo.db.AutoMigrate(&model.User{})
 }
 
-func (repo *UserRepo) GetAllUsers() ([]model.User, error) {
+func (repo *UserRepo) GetByMobile(ctx context.Context, mobile string) (*model.User, error) {
+	u := &model.User{}
+	err := repo.db.Where("mobile = ?", mobile).First(u).Error
+	if gorm.ErrRecordNotFound == err {
+		return nil, nil
+	}
+	return u, err
+}
+
+func (repo *UserRepo) GetAllUsers(ctx context.Context) ([]model.User, error) {
 	var users []model.User
 	result := repo.db.Find(&users)
 	return users, result.Error
