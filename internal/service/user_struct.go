@@ -1,6 +1,11 @@
 package service
 
 type CreateUser struct {
-	Mobile     string `json:"mobile"`
-	VerifyCode string `json:"verify_code"`
+	Mobile     string
+	VerifyCode string
+}
+
+type UserItem struct {
+	UserID int64
+	HasPwd bool
 }

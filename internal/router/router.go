@@ -26,6 +26,6 @@ func registerUserRoutes(ctx *app.AppContext, v1 *gin.RouterGroup) {
 
 	authUser := v1.Group("/user").Use(middleware.JWTAuthMiddleware())
 	{
-		authUser.GET("/list", c.GetUserList)
+		authUser.POST("/setpwd", c.SetPwd)
 	}
 }

@@ -6,19 +6,26 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepo struct {
+type UserRepo interface {
+	Migrate() error
+	GetByMobile(ctx context.Context, mobile string) (*model.User, error)
+	SetPwd(ctx context.Context, userID int64, pwd string) (int64, error)
+	CreateUser(ctx context.Context, item *model.User) error
+}
+
+type userRepo struct {
 	db *gorm.DB
 }
 
-func NewUserRepo(gormDB *gorm.DB) *UserRepo {
-	return &UserRepo{db: gormDB}
+func NewUserRepo(gormDB *gorm.DB) UserRepo {
+	return &userRepo{db: gormDB}
 }
 
-func (repo *UserRepo) Migrate() error {
+func (repo *userRepo) Migrate() error {
 	return repo.db.AutoMigrate(&model.User{})
 }
 
-func (repo *UserRepo) GetByMobile(ctx context.Context, mobile string) (*model.User, error) {
+func (repo *userRepo) GetByMobile(ctx context.Context, mobile string) (*model.User, error) {
 	u := &model.User{}
 	err := repo.db.Where("mobile = ?", mobile).First(u).Error
 	if gorm.ErrRecordNotFound == err {
@@ -27,13 +34,16 @@ func (repo *UserRepo) GetByMobile(ctx context.Context, mobile string) (*model.Us
 	return u, err
 }
 
-func (repo *UserRepo) GetAllUsers(ctx context.Context) ([]model.User, error) {
-	var users []model.User
-	result := repo.db.Find(&users)
-	return users, result.Error
+func (repo *userRepo) SetPwd(ctx context.Context, userID int64, pwd string) (int64, error) {
+	result := repo.db.Model(&model.User{}).Where("user_id = ?", userID).Update("password", pwd)
+	if result.Error != nil {
+		return 0, nil
+	}
+
+	return result.RowsAffected, nil
 }
 
-func (repo *UserRepo) CreateUser(ctx context.Context, item *model.User) error {
+func (repo *userRepo) CreateUser(ctx context.Context, item *model.User) error {
 	err := repo.db.Create(item).Error
 	return err
 }

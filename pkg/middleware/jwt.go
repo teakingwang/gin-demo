@@ -2,6 +2,7 @@
 package middleware
 
 import (
+	"github.com/teakingwang/gin-demo/pkg/consts"
 	"net/http"
 	"strings"
 
@@ -28,7 +29,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		}
 
 		// 把用户信息存入上下文，后续可用
-		c.Set("user_id", claims.UserID)
+		c.Set(consts.JWTKeyUserID, claims.UserID)
 		c.Next()
 	}
 }
