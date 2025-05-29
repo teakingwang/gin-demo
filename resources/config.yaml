@@ -32,3 +32,10 @@ sms:
 jwt:
   secret: "tokentest"
   ttlSeconds: 60480  # 7天
+
+rocketmq:
+  nameServer: "rocketmq-namesrv:9876"
+  producerGroup: "user-producer-group"
+  producerTopic: "user-events"
+  consumerGroup: "user-consumer-group"
+  consumerTopic: "user-events"

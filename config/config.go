@@ -13,6 +13,7 @@ type config struct {
 	Redis    RedisConfig    `yaml:"redis" json:"redis"`
 	SMS      SMSConfig      `yaml:"sms" json:"sms"`
 	JWT      JWTConfig      `yaml:"jwt" json:"jwt"`
+	RocketMQ RocketMQConfig `yaml:"rocketmq" json:"rocketmq"`
 }
 
 type ServerConfig struct {
@@ -53,6 +54,14 @@ type SMSConfig struct {
 type JWTConfig struct {
 	Secret     string `yaml:"secret" json:"secret"`
 	TTLSeconds int    `yaml:"ttlSeconds" json:"ttlSeconds"`
+}
+
+type RocketMQConfig struct {
+	NameServer    string `yaml:"nameServer" json:"nameServer"`       // RocketMQ NameServer 地址
+	ProducerGroup string `yaml:"producerGroup" json:"producerGroup"` // Producer 分组
+	ProducerTopic string `yaml:"producerTopic" json:"producerTopic"` // Producer 使用的 topic
+	ConsumerGroup string `yaml:"consumerGroup" json:"consumerGroup"` // Consumer 分组
+	ConsumerTopic string `yaml:"consumerTopic" json:"consumerTopic"` // Consumer 订阅的 topic
 }
 
 func LoadConfig() *config {

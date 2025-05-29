@@ -11,6 +11,7 @@ import (
 	"github.com/teakingwang/gin-demo/pkg/datastore/redis"
 	"github.com/teakingwang/gin-demo/pkg/generator"
 	"github.com/teakingwang/gin-demo/pkg/idgen"
+	"github.com/teakingwang/gin-demo/pkg/mq"
 	"go.uber.org/zap"
 	"time"
 )
@@ -19,16 +20,19 @@ type UserService interface {
 	SetPwd(ctx context.Context, userID int64, pwd string) error
 	CreateUser(ctx context.Context, create *CreateUser) (string, *UserItem, error)
 	SendSms(ctx context.Context, mobile string) (string, error)
+	HandleUserMessage(ctx context.Context, msg *mq.Message) mq.ConsumeResult
+	DoCleanupTask(ctx context.Context) error
 }
 
 type userService struct {
-	logger   *zap.SugaredLogger
-	redis    redis.Store
-	userRepo repository.UserRepo
+	logger     *zap.SugaredLogger
+	redis      redis.Store
+	mqProducer *mq.MQProducer
+	userRepo   repository.UserRepo
 }
 
-func NewUserService(redisStore redis.Store, logger *zap.SugaredLogger, userRepo repository.UserRepo) UserService {
-	return &userService{userRepo: userRepo, logger: logger, redis: redisStore}
+func NewUserService(redisStore redis.Store, logger *zap.SugaredLogger, mq *mq.MQProducer, userRepo repository.UserRepo) UserService {
+	return &userService{logger: logger, redis: redisStore, mqProducer: mq, userRepo: userRepo}
 }
 
 func (s *userService) SetPwd(ctx context.Context, userID int64, pwd string) error {
@@ -62,6 +66,14 @@ func (s *userService) CreateUser(ctx context.Context, create *CreateUser) (strin
 	if err != nil {
 		return "", nil, err
 	}
+
+	// 发布 MQ 消息
+	msg := map[string]interface{}{
+		"event":   "user registered",
+		"user_id": userItem.UserID,
+		"mobile":  create.Mobile,
+	}
+	_ = s.mqProducer.Send(ctx, msg)
 
 	return token, userItem, nil
 }
@@ -121,4 +133,9 @@ func (s *userService) SendSms(ctx context.Context, mobile string) (string, error
 
 	s.logger.Info("send sms code to mobile:", mobile, " code:", code)
 	return code, nil
+}
+
+func (s *userService) DoCleanupTask(ctx context.Context) error {
+	s.logger.Info("cron test...")
+	return nil
 }

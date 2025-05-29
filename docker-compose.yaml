@@ -45,4 +45,47 @@ services:
     depends_on:  # 指定服务启动的依赖关系
       - gin-pg  # 如果你的应用需要连接数据库，可以添加数据库服务作为依赖
       - gin-redis  # 如果你的应用需要连接 Redis，可以添加 Redis 服务作为依赖
+      - rocketmq-namesrv  # 如果你的应用需要连接 RocketMQ 名称服务器，可以添加名称服务器作为依赖
     command: /app/gin-demo
+
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-namesrv
+    ports:
+      - 9876:9876
+    networks:
+      - gin
+    environment:
+      JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn128m"
+    command: sh mqnamesrv
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-broker
+    depends_on:
+      - rocketmq-namesrv
+    ports:
+      - 10911:10911
+      - 10909:10909
+    networks:
+      - gin
+    environment:
+      JAVA_OPT_EXT: "-server -Xms512m -Xmx512m -Xmn256m"
+      NAMESRV_ADDR: rocketmq-namesrv:9876
+    volumes:
+      - /Users/teaking/dbdata/rocketmq/broker-a/conf/broker-a.conf:/home/rocketmq/conf/broker.conf
+      - /Users/teaking/dbdata/rocketmq/broker-a/store:/home/rocketmq/store
+      - /Users/teaking/dbdata/rocketmq/broker-a/logs:/home/rocketmq/logs
+    command: sh mqbroker -c /home/rocketmq/rocketmq-5.1.4/conf/broker.conf
+
+  rocketmq-dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rocketmq-dashboard
+    ports:
+      - 8081:8080  # 映射本地 8081 到容器内 8080（Dashboard 默认端口）
+    networks:
+      - gin
+    environment:
+      - JAVA_OPTS=-Drocketmq.namesrv.addr=rocketmq-namesrv:9876
+    depends_on:
+      - rocketmq-namesrv

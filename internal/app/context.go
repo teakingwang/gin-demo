@@ -15,7 +15,7 @@ import (
 type AppContext struct {
 	Redis       redis.Store
 	DB          *gorm.DB
-	Logger      *zap.Logger
+	Logger      *zap.SugaredLogger
 	UserService service.UserService
 }
 
@@ -39,10 +39,22 @@ func NewAppContext() *AppContext {
 		panic("failed to migrate database")
 	}
 
+	//// 初始化 MQ Producer
+	//producer, err := mq.NewProducer(config.Config.RocketMQ.NameServer, config.Config.RocketMQ.ProducerTopic, config.Config.RocketMQ.ProducerGroup)
+	//zapLogger.Info(config.Config.RocketMQ.NameServer, ":", config.Config.RocketMQ.ProducerTopic, ":", config.Config.RocketMQ.ProducerGroup)
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	userSrv := service.NewUserService(redisStore, zapLogger, nil, userRepo)
+
+	// 可选：启动 Consumer
+	//task.StartConsumers(context.Background(), userSrv)
+
 	return &AppContext{
 		Redis:       redisStore,
 		DB:          gormDB,
-		Logger:      zap.L(),
-		UserService: service.NewUserService(redisStore, zapLogger, userRepo),
+		Logger:      zapLogger,
+		UserService: userSrv,
 	}
 }
