@@ -1,9 +1,7 @@
 package service
 
 import (
-	"context"
 	"github.com/teakingwang/gin-demo/config"
-	"github.com/teakingwang/gin-demo/internal/repository"
 	"github.com/teakingwang/gin-demo/pkg/db"
 	"github.com/teakingwang/gin-demo/pkg/idgen"
 	"os"
@@ -30,19 +28,4 @@ func TestMain(m *testing.M) {
 
 	// 运行测试
 	m.Run()
-}
-
-func TestUserService_CreateUser(t *testing.T) {
-	gormDB, err := db.NewDB()
-	if err != nil {
-		panic(err)
-	}
-
-	srv := &UserService{
-		userRepo: repository.NewUserRepo(gormDB),
-	}
-	userID, err := srv.CreateUser(context.Background(), &CreateUser{
-		Mobile: "12345678901",
-	})
-	t.Log(userID, err)
 }

@@ -76,7 +76,7 @@ services:
       - /Users/teaking/dbdata/rocketmq/broker-a/conf/broker-a.conf:/home/rocketmq/conf/broker.conf
       - /Users/teaking/dbdata/rocketmq/broker-a/store:/home/rocketmq/store
       - /Users/teaking/dbdata/rocketmq/broker-a/logs:/home/rocketmq/logs
-    command: sh mqbroker -c /home/rocketmq/rocketmq-5.1.4/conf/broker.conf
+    command: sh mqbroker -c /home/rocketmq/conf/broker.conf
 
   rocketmq-dashboard:
     image: apacherocketmq/rocketmq-dashboard:latest

@@ -8,6 +8,7 @@ import (
 	"github.com/teakingwang/gin-demo/pkg/datastore/redis"
 	"github.com/teakingwang/gin-demo/pkg/db"
 	"github.com/teakingwang/gin-demo/pkg/logger"
+	"github.com/teakingwang/gin-demo/pkg/mq"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -17,6 +18,7 @@ type AppContext struct {
 	DB          *gorm.DB
 	Logger      *zap.SugaredLogger
 	UserService service.UserService
+	MQ          *mq.RocketMQ
 }
 
 func NewAppContext() *AppContext {
@@ -31,30 +33,27 @@ func NewAppContext() *AppContext {
 	redisStore := redis.NewRedisClient()
 
 	logger.InitProductionLogger()
-	defer logger.Logger.Sync()
-	zapLogger := zap.S()
+	sugar := logger.GetSugaredLogger()
+	defer sugar.Sync()
 
 	userRepo := repository.NewUserRepo(gormDB)
 	if err := userRepo.Migrate(); err != nil {
 		panic("failed to migrate database")
 	}
 
-	//// 初始化 MQ Producer
-	//producer, err := mq.NewProducer(config.Config.RocketMQ.NameServer, config.Config.RocketMQ.ProducerTopic, config.Config.RocketMQ.ProducerGroup)
-	//zapLogger.Info(config.Config.RocketMQ.NameServer, ":", config.Config.RocketMQ.ProducerTopic, ":", config.Config.RocketMQ.ProducerGroup)
+	//mqClient, err := mq.NewRocketMQ()
 	//if err != nil {
-	//	panic(err)
+	//    panic(err)
 	//}
+	//defer mqClient.Shutdown()
 
-	userSrv := service.NewUserService(redisStore, zapLogger, nil, userRepo)
-
-	// 可选：启动 Consumer
-	//task.StartConsumers(context.Background(), userSrv)
+	userSrv := service.NewUserService(redisStore, sugar, nil, userRepo)
 
 	return &AppContext{
 		Redis:       redisStore,
 		DB:          gormDB,
-		Logger:      zapLogger,
+		Logger:      sugar,
 		UserService: userSrv,
+		//  MQ:          mqClient,
 	}
 }

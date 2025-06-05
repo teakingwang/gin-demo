@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/teakingwang/gin-demo/config"
 	"github.com/teakingwang/gin-demo/internal/consts"
 	"github.com/teakingwang/gin-demo/internal/model"
@@ -20,19 +21,18 @@ type UserService interface {
 	SetPwd(ctx context.Context, userID int64, pwd string) error
 	CreateUser(ctx context.Context, create *CreateUser) (string, *UserItem, error)
 	SendSms(ctx context.Context, mobile string) (string, error)
-	HandleUserMessage(ctx context.Context, msg *mq.Message) mq.ConsumeResult
 	DoCleanupTask(ctx context.Context) error
 }
 
 type userService struct {
-	logger     *zap.SugaredLogger
-	redis      redis.Store
-	mqProducer *mq.MQProducer
-	userRepo   repository.UserRepo
+	logger   *zap.SugaredLogger
+	redis    redis.Store
+	mq       *mq.RocketMQ
+	userRepo repository.UserRepo
 }
 
-func NewUserService(redisStore redis.Store, logger *zap.SugaredLogger, mq *mq.MQProducer, userRepo repository.UserRepo) UserService {
-	return &userService{logger: logger, redis: redisStore, mqProducer: mq, userRepo: userRepo}
+func NewUserService(redisStore redis.Store, logger *zap.SugaredLogger, mq *mq.RocketMQ, userRepo repository.UserRepo) UserService {
+	return &userService{logger: logger, redis: redisStore, mq: mq, userRepo: userRepo}
 }
 
 func (s *userService) SetPwd(ctx context.Context, userID int64, pwd string) error {
@@ -68,12 +68,13 @@ func (s *userService) CreateUser(ctx context.Context, create *CreateUser) (strin
 	}
 
 	// 发布 MQ 消息
-	msg := map[string]interface{}{
-		"event":   "user registered",
-		"user_id": userItem.UserID,
-		"mobile":  create.Mobile,
+	msg := map[string]string{"event": "user_created"}
+	body, err := json.Marshal(msg)
+	if err != nil {
+		s.logger.Error(err)
+	} else {
+		_ = s.mq.SendMessage(config.Config.RocketMQ.ProducerTopic, body)
 	}
-	_ = s.mqProducer.Send(ctx, msg)
 
 	return token, userItem, nil
 }

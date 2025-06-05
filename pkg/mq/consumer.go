@@ -2,49 +2,34 @@ package mq
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 )
 
-type MQConsumer struct {
-	consumer rocketmq.PushConsumer
-}
+type MessageHandler func(ctx context.Context, msgs []*primitive.MessageExt) (consumer.ConsumeResult, error)
 
-func NewConsumer(
-	nameServer, topic, group string,
-	handler func(ctx context.Context, msg *primitive.MessageExt) consumer.ConsumeResult,
-) (rocketmq.PushConsumer, error) {
-	c, err := rocketmq.NewPushConsumer(
-		consumer.WithGroupName(group),
-		consumer.WithNameServer([]string{nameServer}),
+func (r *RocketMQ) RegisterConsumer(topic string, handler MessageHandler) error {
+	err := r.Consumer.Subscribe(
+		topic,
+		consumer.MessageSelector{},
+		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+			return handler(ctx, msgs)
+		},
 	)
+
 	if err != nil {
-		return nil, fmt.Errorf("create consumer failed: %w", err)
+		return err
 	}
 
-	err = c.Subscribe(topic, consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
-		for _, msg := range msgs {
-			result := handler(ctx, msg)
-			if result != consumer.ConsumeSuccess {
-				return result, nil
-			}
-		}
-		return consumer.ConsumeSuccess, nil
-	})
+	err = r.Consumer.Start()
 	if err != nil {
-		return nil, fmt.Errorf("subscribe failed: %w", err)
+		return err
 	}
 
-	if err := c.Start(); err != nil {
-		return nil, fmt.Errorf("start consumer failed: %w", err)
-	}
-
-	return c, nil
+	r.consumerInit = true // ✅ 只有成功启动后才设置为 true
+	return nil
 }
 
-func (c *MQConsumer) Shutdown() error {
-	return c.consumer.Shutdown()
+func (r *RocketMQ) StartConsumer() error {
+	return r.Consumer.Start()
 }

@@ -46,6 +46,11 @@ func (s *Server) Run() {
 	s.cron.Start()
 	defer s.cron.Stop() // 确保退出时停止任务
 
+	// mq
+	//if err := task.RegisterConsumers(ctx.MQ); err != nil {
+	//    panic(err)
+	//}
+
 	// router
 	r := router.NewRouter(ctx)
 	// 创建 HTTP 服务器

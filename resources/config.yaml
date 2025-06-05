@@ -35,7 +35,7 @@ jwt:
 
 rocketmq:
   nameServer: "rocketmq-namesrv:9876"
-  producerGroup: "user-producer-group"
+  groupName: "gin-demo-group"
   producerTopic: "user-events"
-  consumerGroup: "user-consumer-group"
   consumerTopic: "user-events"
+  retryTimes: 3
